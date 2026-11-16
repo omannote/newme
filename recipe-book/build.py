@@ -73,21 +73,23 @@ R=[
 ]
 def r3(x): return f"{x:.3f}"
 def ceil1(x): return math.ceil(round(x*10,6))/10
+PRICES={'MRB-01':(3.2,3.6),'MRB-02':(3.2,3.6),'MRB-03':(3.4,3.8),'MRB-04':(3.9,4.3),'MRB-05':(3.2,3.6),'MRB-06':(3.8,4.2),'MRB-07':(3.3,3.7),'MRB-08':(3.5,3.9),'MRB-09':(3.2,3.6),'MRB-10':(3.6,4.0)}
 out=[]
 for code,ar,en,w,K,ing,steps,alg,_ in R:
     kc=P=C=F=raw=0
     for n,g in ing:
         d=DB[n]; kc+=d[0]*g/100;P+=d[1]*g/100;C+=d[2]*g/100;F+=d[3]*g/100;raw+=d[4]*g/1000
-    sub=ceil1((K+PACK+DELIV)/(1-FEE-0.30))
+    sub=PRICES[code][0]
     sub_cost=K+PACK+DELIV+FEE*sub
-    app=ceil1((K+PACK)/(1-APP-0.20))
+    app=PRICES[code][1]
     app_cost=K+PACK+APP*app
-    out.append(dict(code=code,ar=ar,en=en,w=w,K=K,ing=ing,steps=steps,alg=alg,kcal=round(kc/5)*5,P=round(P),C=round(C),F=round(F),raw=raw,
+    kmax=lambda m:min(sub*(1-FEE-m)-PACK-DELIV, app*(1-APP-m)-PACK)
+    out.append(dict(nego_open=kmax(0.30),nego_target=kmax(0.25),nego_max=kmax(0.15),code=code,ar=ar,en=en,w=w,K=K,ing=ing,steps=steps,alg=alg,kcal=round(kc/5)*5,P=round(P),C=round(C),F=round(F),raw=raw,
       sub=sub,sub_cost=sub_cost,sub_profit=sub-sub_cost,sub_m=(sub-sub_cost)/sub*100,
       app=app,app_cost=app_cost,app_profit=app-app_cost,app_m=(app-app_cost)/app*100))
 json.dump(out,open("/home/user/newme/recipe-book/data.json","w"),ensure_ascii=False,indent=1)
 for o in out:
-    print(o["code"],o["en"],o["kcal"],"kcal P",o["P"],"C",o["C"],"F",o["F"],"| K",o["K"],"raw~%.3f"%o["raw"],"| sub",o["sub"],"cost %.3f"%o["sub_cost"],"profit %.3f (%.0f%%)"%(o["sub_profit"],o["sub_m"]),"| app",o["app"],"profit %.3f (%.0f%%)"%(o["app_profit"],o["app_m"]))
+    print(o['code'],'| open %.3f target %.3f max %.3f'%(o['nego_open'],o['nego_target'],o['nego_max']),'|',o["code"],o["en"],o["kcal"],"kcal P",o["P"],"C",o["C"],"F",o["F"],"| K",o["K"],"raw~%.3f"%o["raw"],"| sub",o["sub"],"cost %.3f"%o["sub_cost"],"profit %.3f (%.0f%%)"%(o["sub_profit"],o["sub_m"]),"| app",o["app"],"profit %.3f (%.0f%%)"%(o["app_profit"],o["app_m"]))
 
 def fmt_g(g):
     return f"{g:g} جم" if g<1000 else f"{g/1000:.2f} كجم"
@@ -168,8 +170,8 @@ for o in out:
 <div class='sec'>الجودة والسلامة</div><ul class='q'><li>الالتزام بالأوزان وفحص الوزن النهائي ({o['w']} جم ± 10).</li><li>درجة حرارة داخلية آمنة وتبريد سريع.</li><li>قوام صوص متجانس ونكهة متوازنة.</li><li>مسببات الحساسية: {o['alg']}.</li></ul></div></div>
 <div class='foot'><span>{o['code']}</span><span>Master Recipe Book v1.0</span></div></div>""")
 # summary
-rows="".join(f"<tr><td>{o['code']}</td><td>{o['ar']}</td><td class='n'>{o['kcal']}</td><td class='n'>{o['P']}</td><td class='n'>{r3(o['K'])}</td><td class='n'>{r3(o['sub_cost'])}</td><td class='n'>{r3(o['sub'])}</td><td class='n'>{r3(o['sub_profit'])}</td><td class='n'>{o['sub_m']:.0f}%</td><td class='n'>{r3(o['app'])}</td><td class='n'>{r3(o['app_profit'])}</td></tr>" for o in out)
+rows="".join(f"<tr><td>{o['code']}</td><td>{o['ar']}</td><td class='n'>{o['kcal']}</td><td class='n'>{o['P']}</td><td class='n'>{r3(o['K'])}</td><td class='n'>{r3(o['sub_cost'])}</td><td class='n'>{r3(o['sub'])}</td><td class='n'>{r3(o['sub_profit'])}</td><td class='n'>{o['sub_m']:.0f}%</td><td class='n'>{r3(o['app'])}</td><td class='n'>{r3(o['app_profit'])}</td><td class='n'>{r3(o['nego_open'])}</td><td class='n'>{r3(o['nego_target'])}</td><td class='n'>{r3(o['nego_max'])}</td></tr>" for o in out)
 H.append(f"""<div class='page'><div class='hd'><span>الدليل الرئيسي للوصفات القياسية</span><span>الملاحق والجداول</span></div><h2 class='title'>ملخص السعرات والتكلفة والتسعير</h2>
-<table style='font-size:8.5pt'><tr><th>الرمز</th><th>الوجبة</th><th class='n'>سعرات</th><th class='n'>بروتين (جم)</th><th class='n'>سعر المطبخ</th><th class='n'>إجمالي التكلفة</th><th class='n'>سعر الاشتراك</th><th class='n'>الربح</th><th class='n'>الهامش</th><th class='n'>سعر التطبيق</th><th class='n'>ربح التطبيق</th></tr>{rows}</table>
-<p class='note'>جميع المبالغ بالريال العُماني. الربح صافٍ قبل التسويق والرواتب والمصاريف الإدارية.</p></div></body></html>""")
+<table style='font-size:8.5pt'><tr><th>الرمز</th><th>الوجبة</th><th class='n'>سعرات</th><th class='n'>بروتين (جم)</th><th class='n'>سعر المطبخ</th><th class='n'>إجمالي التكلفة</th><th class='n'>سعر الاشتراك</th><th class='n'>الربح</th><th class='n'>الهامش</th><th class='n'>سعر التطبيق</th><th class='n'>ربح التطبيق</th><th class='n'>افتتاح التفاوض</th><th class='n'>الهدف</th><th class='n'>الحد الأقصى</th></tr>{rows}</table>
+<p class='note'>حدود التفاوض = أعلى سعر نشتري به من المطبخ مع هامش صافٍ 30% (افتتاح) أو 25% (هدف) أو 15% (حد أقصى، لا نتجاوزه). الحد الأدنى للأمان يُحسب على الأضعف بين الاشتراك والتطبيق. جميع المبالغ بالريال العُماني. الربح صافٍ قبل التسويق والرواتب والمصاريف الإدارية.</p></div></body></html>""")
 open("/home/user/newme/recipe-book/master-recipe-book.html","w").write("".join(H))
